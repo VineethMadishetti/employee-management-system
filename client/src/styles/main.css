@@ -1,0 +1,13 @@
+/* Main CSS File - Imports all organized styles */
+@import './variables.css';
+@import './base.css';
+@import './components.css';
+@import './layout/main-layout.css';
+@import './layout/header.css';
+@import './layout/footer.css';
+@import './pages/login.css';
+@import './pages/home.css';
+@import './pages/employee.css';
+@import './pages/edit-employee.css';
+@import './pages/forgot-password.css';
+@import './pages/reset-password.css';

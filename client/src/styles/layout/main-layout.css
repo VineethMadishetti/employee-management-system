@@ -1,0 +1,136 @@
+/* Main Layout Styles */
+@import '../variables.css';
+
+/* Main Layout */
+.main-content {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 80px);
+}
+
+.content-area {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: transparent;
+}
+
+/* Premium Sidebar */
+.sidebar {
+  width: 280px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+  padding: 2rem 1rem;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--primary-gradient);
+  opacity: 0.05;
+  z-index: -1;
+}
+
+.sidebar-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+}
+
+.sidebar-nav-link {
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: var(--primary-gradient);
+  transition: width var(--transition-normal);
+  z-index: -1;
+}
+
+.sidebar-nav-link:hover,
+.sidebar-nav-link.active {
+  color: white;
+  transform: translateX(5px);
+}
+
+.sidebar-nav-link:hover::before,
+.sidebar-nav-link.active::before {
+  width: 100%;
+}
+
+.sidebar-nav-link i {
+  font-size: 1.25rem;
+  width: 20px;
+  text-align: center;
+}
+
+.features-submenu {
+  padding-left: 2rem;
+  margin-top: 0.5rem;
+}
+
+.features-submenu .nav-link {
+  font-weight: 400;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+}
+
+.features-submenu .nav-link:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: -100%;
+    height: 100vh;
+    z-index: 1000;
+    transition: left var(--transition-normal);
+  }
+  
+  .sidebar.show {
+    left: 0;
+  }
+  
+  .content-area {
+    padding: 1rem;
+  }
+  
+  .main-content {
+    flex-direction: column;
+  }
+}
