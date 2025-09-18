@@ -1,6 +1,6 @@
 // client/src/components/EmployeeFilters.jsx
 import React from 'react';
-import { Card, Form, InputGroup, Row, Col } from 'react-bootstrap';
+import { Card, Form, InputGroup, Row, Col, Button } from 'react-bootstrap';
 
 const EmployeeFilters = ({
     searchTerm,
