@@ -14,8 +14,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const EmployeeListPage = () => {
     const navigate = useNavigate();
-    const [employees, setEmployees] = useState([]);  // Always array
-    const [departments, setDepartments] = useState([]);  // From backend
+    const [employees, setEmployees] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -35,28 +35,34 @@ const EmployeeListPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
 
-    // Fetch user role from local storage on component mount
+    // Fetch user role and validate token
     useEffect(() => {
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        if (userInfo && userInfo.role) {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        if (userInfo && userInfo.role && userInfo.token) {
             setUserRole(userInfo.role);
+        } else {
+            console.error('No valid userInfo or token found in localStorage');
+            setError('Please log in to view employees.');
+            navigate('/login');
         }
-    }, []);
+    }, [navigate]);
 
     const fetchEmployees = async () => {
         setLoading(true);
         setError(null);
         try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const token = userInfo?.token;
 
             if (!token) {
+                console.error('No token found, redirecting to login');
                 setLoading(false);
                 setError('You must be logged in to view employees.');
                 navigate('/login');
                 return;
             }
 
+            console.log('Fetching employees with token:', token.substring(0, 10) + '...'); // Debug log
             const config = {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -73,25 +79,31 @@ const EmployeeListPage = () => {
             };
             
             const { data } = await axios.get(`${API_URL}/employees`, config);
+            console.log('API response:', data); // Debug log
             setEmployees(data.employees || []);
-            setDepartments(data.departments || []);  // Set from backend
+            setDepartments(data.departments || []);
             setTotalPages(data.totalPages || 1);
-            setTotalCount(data.totalEmployees || 0);  // FIXED: Match backend key
+            setTotalCount(data.totalEmployees || 0);
             setLoading(false);
         } catch (err) {
             setLoading(false);
-            const errorMessage = err.response?.data?.message || 'Failed to fetch employees. Please try again.';
+            const errorMessage = err.response?.status === 401 
+                ? 'Unauthorized: Please log in again.'
+                : err.response?.data?.message || 'Failed to fetch employees. Please try again.';
             setError(errorMessage);
             setEmployees([]);
-            console.error(err);
+            console.error('Fetch error:', err.response || err);
+            if (err.response?.status === 401) {
+                localStorage.removeItem('userInfo'); // Clear invalid token
+                navigate('/login');
+            }
         }
     };
 
     useEffect(() => {
-        fetchEmployees();
-    }, [currentPage, itemsPerPage, searchTerm, filterDepartment, filterStatus, sortField, sortDirection]);
+        if (userRole) fetchEmployees(); // Only fetch if userRole is set
+    }, [currentPage, itemsPerPage, searchTerm, filterDepartment, filterStatus, sortField, sortDirection, userRole]);
 
-    // Sort handler (toggles direction)
     const handleSort = (field) => {
         if (sortField === field) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -99,7 +111,7 @@ const EmployeeListPage = () => {
             setSortField(field);
             setSortDirection('asc');
         }
-        setCurrentPage(1);  // Reset page
+        setCurrentPage(1);
     };
 
     const handleAddClick = () => setShowAddModal(true);
@@ -128,8 +140,14 @@ const EmployeeListPage = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this employee?')) {
             try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 const token = userInfo?.token;
+
+                if (!token) {
+                    setError('Please log in to perform this action.');
+                    navigate('/login');
+                    return;
+                }
 
                 const config = {
                     headers: {
@@ -230,12 +248,12 @@ const EmployeeListPage = () => {
                     setFilterStatus={setFilterStatus}
                     itemsPerPage={itemsPerPage}
                     setItemsPerPage={setItemsPerPage}
-                    departments={departments}  // From backend
+                    departments={departments}
                     handleClearFilters={handleClearFilters}
                 />
 
                 <EmployeeTable
-                    employees={employees}  // FIXED: Direct pass
+                    employees={employees}
                     loading={loading}
                     error={error}
                     handleSort={handleSort}

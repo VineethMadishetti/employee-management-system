@@ -2,7 +2,7 @@ import React from 'react';
 import { Table, Spinner, Alert, Button } from 'react-bootstrap';
 
 const EmployeeTable = ({
-    employees = [],  // FIXED: Default to prevent undefined
+    employees = [],
     loading,
     error,
     handleSort,
@@ -86,7 +86,7 @@ const EmployeeTable = ({
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="5" className="text-center py-4">  // FIXED: 5 columns
+                            <td colSpan="5" className="text-center py-4">
                                 <div>
                                     <i className="bi bi-inbox display-4 text-muted"></i>
                                     <p className="mt-2 text-muted">No employees found.</p>

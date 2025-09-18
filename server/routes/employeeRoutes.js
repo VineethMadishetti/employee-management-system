@@ -54,17 +54,17 @@ router.get('/', protect, async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit));
             
-        const totalEmployees = await Employee.countDocuments(query);  // Renamed for consistency
+        const totalEmployees = await Employee.countDocuments(query);
         const departments = await Employee.distinct('department');
 
-        // Debug log (remove in production)
+        // Debug log
         console.log(`Fetched ${employees.length} employees for query:`, { page, limit, search, department, status });
 
         res.json({
-            employees: employees || [],  // Always array
+            employees: employees || [],
             totalPages: Math.ceil(totalEmployees / parseInt(limit)),
             currentPage: parseInt(page),
-            totalEmployees,  // Consistent key
+            totalEmployees,
             departments: departments || [],
         });
     } catch (error) {
@@ -78,9 +78,7 @@ router.get('/', protect, async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res) => {
     
-    // --- DIAGNOSTIC LOG ---
     console.log('Received employee data:', req.body);
-    // ----------------------
 
     const { name, email, phone, jobTitle, department } = req.body;
 
@@ -102,7 +100,7 @@ router.post('/', protect, admin, async (req, res) => {
             phone,
             jobTitle,
             department,
-            user: req.user._id, // Associate the employee with the logged-in user
+            user: req.user._id,
         });
 
         res.status(201).json(employee);
@@ -158,7 +156,7 @@ router.delete('/:id', protect, admin, async (req, res) => {
     }
 });
 
-// @desc    Bulk delete employees (kept for future, but not used in frontend)
+// @desc    Bulk delete employees (kept for future, not used in frontend)
 // @route   DELETE /api/employees/bulk
 // @access  Private/Admin
 router.delete('/bulk', protect, admin, async (req, res) => {
@@ -182,7 +180,7 @@ router.delete('/bulk', protect, admin, async (req, res) => {
     }
 });
 
-// @desc    Bulk update employee status (kept for future, but not used in frontend)
+// @desc    Bulk update employee status (kept for future, not used in frontend)
 // @route   PUT /api/employees/bulk/status
 // @access  Private/Admin
 router.put('/bulk/status', protect, admin, async (req, res) => {

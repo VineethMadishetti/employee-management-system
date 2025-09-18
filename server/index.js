@@ -41,5 +41,5 @@ connectDB().then(() => {
     });
 }).catch(error => {
     console.error('Failed to connect to the database. Server will not start.', error);
-    process.exit(1); // Exit the process with an error code
+    process.exit(1);
 });
