@@ -2,7 +2,9 @@
 import React from 'react';
 
 const EmployeeStats = ({ employees, filteredCount }) => {
-    const departmentCount = new Set(employees.map(emp => emp.department)).size;
+    // Add a check to ensure `employees` is a valid array before using .map()
+    const safeEmployees = employees || [];
+    const departmentCount = new Set(safeEmployees.map(emp => emp.department)).size;
 
     return (
         <div className="stats-cards">
@@ -11,7 +13,7 @@ const EmployeeStats = ({ employees, filteredCount }) => {
                     <i className="bi bi-people"></i>
                 </div>
                 <div className="stat-content">
-                    <div className="stat-number">{employees.length}</div>
+                    <div className="stat-number">{safeEmployees.length}</div>
                     <div className="stat-label">Total Employees</div>
                 </div>
             </div>
