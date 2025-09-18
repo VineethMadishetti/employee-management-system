@@ -32,7 +32,7 @@ const HomePage = () => {
                         <div className="d-flex align-items-center">
                             <i className="bi bi-check-circle-fill me-3 fs-4"></i>
                             <div>
-                                <h5 className="mb-1">Welcome Mr./Mrs, {user.name}!</h5>
+                                <h5 className="mb-1">Welcome Mr./Mrs. , {user.name}!</h5>
                                 <p className="mb-0 text-white">
                                     You are logged in as a<span className="fw-bold ms-1 text-info">{user.role}</span>
                                 </p>
