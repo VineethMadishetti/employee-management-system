@@ -1,18 +1,15 @@
 // client/src/components/EmployeeFilters.jsx
 import React from 'react';
-import { Card, Form, InputGroup, Row, Col, Button } from 'react-bootstrap';
+import { Card, Form, InputGroup, Row, Col } from 'react-bootstrap';
 
 const EmployeeFilters = ({
     searchTerm,
     setSearchTerm,
     filterDepartment,
     setFilterDepartment,
-    filterStatus,
-    setFilterStatus,
     itemsPerPage,
     setItemsPerPage,
-    departments,
-    handleClearFilters
+    departments
 }) => {
     return (
         <div className="search-filter-section">
@@ -22,9 +19,6 @@ const EmployeeFilters = ({
                         <i className="bi bi-funnel me-2"></i>
                         Search & Filter
                     </h5>
-                    <Button variant="link" className="clear-filters-btn" onClick={handleClearFilters}>
-                        Clear Filters
-                    </Button>
                 </Card.Header>
                 <Card.Body className="filter-body">
                     <Row className="g-3 align-items-end">
@@ -46,26 +40,10 @@ const EmployeeFilters = ({
                                 </InputGroup>
                             </Form.Group>
                         </Col>
-                        {/* Filters on right */}
-                        <Col md={6} className="d-flex justify-content-end align-items-end flex-wrap gap-3">
-                            <Form.Group style={{ minWidth: "120px" }}>
-                                <Form.Label className="filter-label">
-                                    <i className="bi bi-list-check me-1"></i>
-                                    Status
-                                </Form.Label>
-                                <Form.Select
-                                    value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value)}
-                                    className="filter-select"
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="Active">Active</option>
-                                    <option value="On Leave">On Leave</option>
-                                    <option value="Terminated">Terminated</option>
-                                </Form.Select>
-                            </Form.Group>
-                            
-                            <Form.Group style={{ minWidth: "160px" }}>
+
+                        {/* Department + Per Page aligned right */}
+                        <Col md={6} className="d-flex justify-content-end gap-3">
+                            <Form.Group style={{ minWidth: "200px" }}>
                                 <Form.Label className="filter-label">
                                     <i className="bi bi-building me-1"></i>
                                     Department
