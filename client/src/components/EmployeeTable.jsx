@@ -13,7 +13,8 @@ const EmployeeTable = ({
     sortField,
     sortDirection,
     handleEdit,
-    handleDelete
+    handleDelete,
+    userRole // Add this new prop
 }) => {
     const getDisplayName = (name) => name || '';
 
@@ -47,61 +48,71 @@ const EmployeeTable = ({
             <Table hover responsive className="employee-table">
                 <thead>
                     <tr>
-                        <th>
-                            <Form.Check
-                                type="checkbox"
-                                checked={selectedEmployees.length === paginatedEmployees.length && paginatedEmployees.length > 0}
-                                onChange={handleSelectAll}
-                            />
-                        </th>
-                        <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                        <th className="sortable-header" onClick={() => handleSort('name')}>
                             Name {renderSortArrow('name')}
                         </th>
-                        <th>Email </th>
-                        <th>Job Title</th>
-                        <th>Department</th>
-                        <th>Actions</th>
+                        <th className="sortable-header" onClick={() => handleSort('email')}>
+                            Email {renderSortArrow('email')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('phone')}>
+                            Phone {renderSortArrow('phone')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('jobTitle')}>
+                            Job Title {renderSortArrow('jobTitle')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('department')}>
+                            Department {renderSortArrow('department')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('status')}>
+                            Status {renderSortArrow('status')}
+                        </th>
+                        {userRole === 'admin' && <th className="text-end">Actions</th>}
                     </tr>
                 </thead>
                 <tbody>
-                    {paginatedEmployees.length > 0 ? (
-                        paginatedEmployees.map(employee => (
+                    {paginatedEmployees && paginatedEmployees.length > 0 ? (
+                        paginatedEmployees.map((employee) => (
                             <tr key={employee._id}>
-                                <td>
-                                    <Form.Check
-                                        type="checkbox"
-                                        checked={selectedEmployees.includes(employee._id)}
-                                        onChange={(e) => handleSelectEmployee(e, employee._id)}
-                                    />
+                                <td className="align-middle">{getDisplayName(employee.name)}</td>
+                                <td className="align-middle">{employee.email}</td>
+                                <td className="align-middle">{employee.phone}</td>
+                                <td className="align-middle">{employee.jobTitle}</td>
+                                <td className="align-middle">{employee.department}</td>
+                                <td className="align-middle">
+                                    <Badge bg={
+                                        employee.status === 'Active' ? 'success' :
+                                        employee.status === 'On Leave' ? 'warning' :
+                                        'danger'
+                                    }>
+                                        {employee.status}
+                                    </Badge>
                                 </td>
-                                <td>{getDisplayName(employee.name)}</td>
-                                <td>{employee.email}</td>
-                                <td>{employee.jobTitle}</td>
-                                <td>{employee.department}</td>
-                                <td>
-                                    <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => handleEdit(employee)}
-                                        className="me-2"
-                                        title="Edit Employee"
-                                    >
-                                        <i className="bi bi-pencil"></i>
-                                    </Button>
-                                    <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        onClick={() => handleDelete(employee._id)}
-                                        title="Delete Employee"
-                                    >
-                                        <i className="bi bi-trash"></i>
-                                    </Button>
-                                </td>
+                                {userRole === 'admin' && (
+                                    <td className="align-middle text-end">
+                                        <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={() => handleEdit(employee)}
+                                            className="me-2"
+                                            title="Edit Employee"
+                                        >
+                                            <i className="bi bi-pencil"></i>
+                                        </Button>
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => handleDelete(employee._id)}
+                                            title="Delete Employee"
+                                        >
+                                            <i className="bi bi-trash"></i>
+                                        </Button>
+                                    </td>
+                                )}
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="7" className="text-center py-4">
+                            <td colSpan={userRole === 'admin' ? 7 : 6} className="text-center py-4">
                                 <div>
                                     <i className="bi bi-inbox display-4 text-muted"></i>
                                     <p className="mt-2 text-muted">No employees found.</p>

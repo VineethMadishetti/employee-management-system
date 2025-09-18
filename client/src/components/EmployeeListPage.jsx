@@ -21,6 +21,7 @@ const EmployeeListPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [employeeToEdit, setEmployeeToEdit] = useState(null);
     const [showExportModal, setShowExportModal] = useState(false);
+    const [userRole, setUserRole] = useState(null);
 
     // Filter and pagination state
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,137 +31,74 @@ const EmployeeListPage = () => {
     const [sortDirection, setSortDirection] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [selectedEmployees, setSelectedEmployees] = useState([]);
-    
     const [totalPages, setTotalPages] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
 
-    const initialRender = React.useRef(true);
+    const departments = useMemo(() => {
+        const allDepartments = employees.map(emp => emp.department);
+        return [...new Set(allDepartments)].sort();
+    }, [employees]);
+
+    // Fetch user role from local storage on component mount
+    useEffect(() => {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        if (userInfo && userInfo.role) {
+            setUserRole(userInfo.role);
+        }
+    }, []);
 
     const fetchEmployees = async () => {
         setLoading(true);
         setError(null);
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        const token = userInfo?.token;
-
-        if (!token) {
-            setError('Not authorized, no token found.');
-            setLoading(false);
-            return;
-        }
-
         try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const token = userInfo?.token;
+
+            if (!token) {
+                setLoading(false);
+                setError('You must be logged in to view employees.');
+                navigate('/login');
+                return;
+            }
+
             const config = {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
+                params: {
+                    page: currentPage,
+                    limit: itemsPerPage,
+                    search: searchTerm,
+                    department: filterDepartment,
+                    status: filterStatus,
+                    sortBy: sortField,
+                    sortOrder: sortDirection,
+                },
             };
-
-            const { data } = await axios.get(
-                `${API_URL}/employees?page=${currentPage}&limit=${itemsPerPage}&search=${searchTerm}&department=${filterDepartment}&status=${filterStatus}&sortBy=${sortField}&sortOrder=${sortDirection}`,
-                config
-            );
             
+            const { data } = await axios.get(`${API_URL}/employees`, config);
             setEmployees(data.employees);
             setTotalPages(data.totalPages);
+            setTotalCount(data.totalCount);
             setLoading(false);
         } catch (err) {
-            setError(err.response?.data?.message || 'Error fetching employees');
             setLoading(false);
-            if (err.response?.status === 401) {
-                localStorage.removeItem('userInfo');
-                navigate('/login');
-            }
+            const errorMessage = err.response?.data?.message || 'Failed to fetch employees. Please try again.';
+            setError(errorMessage);
+            console.error(err);
         }
     };
 
     useEffect(() => {
-        if (initialRender.current) {
-            initialRender.current = false;
-        } else {
-            fetchEmployees();
-        }
-    }, [currentPage, itemsPerPage, sortField, sortDirection, filterDepartment, filterStatus, searchTerm]);
+        fetchEmployees();
+    }, [currentPage, itemsPerPage, searchTerm, filterDepartment, filterStatus, sortField, sortDirection]);
 
-    const filteredAndSortedEmployees = useMemo(() => {
-        const sorted = [...employees].sort((a, b) => {
-            const aValue = a[sortField];
-            const bValue = b[sortField];
-            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        return sorted;
-    }, [employees, sortField, sortDirection]);
-
-    const paginatedEmployees = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        return filteredAndSortedEmployees.slice(start, end);
-    }, [filteredAndSortedEmployees, currentPage, itemsPerPage]);
-
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const allEmployeeIds = filteredAndSortedEmployees.map(emp => emp._id);
-            setSelectedEmployees(allEmployeeIds);
-        } else {
-            setSelectedEmployees([]);
-        }
-    };
-
-    const handleSelectEmployee = (e, employeeId) => {
-        if (e.target.checked) {
-            setSelectedEmployees([...selectedEmployees, employeeId]);
-        } else {
-            setSelectedEmployees(selectedEmployees.filter((id) => id !== employeeId));
-        }
-    };
+    const handleAddClick = () => setShowAddModal(true);
+    const handleCloseAddModal = () => setShowAddModal(false);
     
-    const handleDelete = async (employeeId) => {
-        if (window.confirm('Are you sure you want to delete this employee?')) {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const token = userInfo?.token;
-    
-                const config = {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                };
-    
-                await axios.delete(`${API_URL}/employees/${employeeId}`, config);
-                fetchEmployees(); 
-            } catch (err) {
-                setError(err.response?.data?.message || 'Error deleting employee');
-            }
-        }
-    };
-    
-    const handleBulkDelete = async () => {
-        if (selectedEmployees.length === 0) {
-            alert('Please select at least one employee to delete.');
-            return;
-        }
-    
-        if (window.confirm(`Are you sure you want to delete ${selectedEmployees.length} selected employees?`)) {
-            try {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                const token = userInfo?.token;
-    
-                const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                };
-    
-                await axios.post(`${API_URL}/employees/bulk/delete`, { employeeIds: selectedEmployees }, config);
-                setSelectedEmployees([]);
-                fetchEmployees();
-            } catch (err) {
-                setError(err.response?.data?.message || 'Error performing bulk delete');
-            }
-        }
+    const handleEmployeeAdded = () => {
+        handleCloseAddModal();
+        fetchEmployees();
     };
 
     const handleEdit = (employee) => {
@@ -168,89 +106,91 @@ const EmployeeListPage = () => {
         setShowEditModal(true);
     };
 
-    // MODIFIED: Restrict sorting to only the 'name' field
-    const handleSort = (field) => {
-        if (field === 'name') {
-            const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-            setSortField(field);
-            setSortDirection(newDirection);
-            setCurrentPage(1);
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setEmployeeToEdit(null);
+    };
+
+    const handleEmployeeUpdated = () => {
+        handleCloseEditModal();
+        fetchEmployees();
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this employee?')) {
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                const token = userInfo?.token;
+
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                };
+
+                await axios.delete(`${API_URL}/employees/${id}`, config);
+                fetchEmployees();
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to delete employee.');
+            }
         }
     };
-    
-    const departments = useMemo(() => {
-        const allDepartments = employees.map(emp => emp.department);
-        return ['all', ...new Set(allDepartments)];
+
+    // Pagination
+    const filteredAndSortedEmployees = useMemo(() => {
+        return employees.slice();
     }, [employees]);
 
     const handleExport = (format) => {
-        const exportData = selectedEmployees.length > 0
-            ? employees.filter(emp => selectedEmployees.includes(emp._id))
-            : filteredAndSortedEmployees;
+        const employeesToExport = filteredAndSortedEmployees;
 
         if (format === 'csv') {
-            const csvData = [
-                ['Name', 'Email Address', 'Contact', 'Job Title', 'Department'],
-                ...exportData.map(emp => [emp.name, emp.email, emp.phone, emp.jobTitle, emp.department])
-            ].map(e => e.join(",")).join("\n");
-            
-            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', 'employees.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } else if (format === 'json') {
-            const jsonData = JSON.stringify(exportData, null, 2);
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', 'employees.json');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const header = Object.keys(employeesToExport[0]).join(',');
+            const body = employeesToExport.map(row => Object.values(row).join(',')).join('\n');
+            const csv = header + '\n' + body;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'employees.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
-        setShowExportModal(false);
+    };
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setFilterDepartment('all');
+        setFilterStatus('all');
+        setSortField('name');
+        setSortDirection('asc');
+        setCurrentPage(1);
     };
 
     return (
-        <div className="employee-list-page">
-            <Container>
+        <div className="employee-page-container">
+            <Container fluid className="px-md-5">
                 <Row className="mb-4 align-items-center">
                     <Col>
-                        <h1 className="page-title">
-                            <i className="bi bi-person-lines-fill me-2"></i>
-                            Employee Management
-                        </h1>
+                        <h2 className="page-title">Employee Dashboard</h2>
                     </Col>
-                    <Col xs="auto" className="text-end d-flex align-items-center">
-                       
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowAddModal(true)}
-                            className="add-employee-btn mx-2"
-                            title="Add Employee"
-                        >
-                            <i className="bi bi-person-plus me-1"></i> Add Employee
-                        </Button>
-
-                         <Button
-                            variant="success"
-                            onClick={() => setShowExportModal(true)}
-                            className="me-2 export-btn"
-                            title="Export Data"
-                        >
-                            <i className="bi bi-download me-1"></i> Export
+                    <Col xs="auto" className="text-end">
+                        {userRole === 'admin' && (
+                            <Button variant="primary" onClick={handleAddClick} className="add-employee-btn">
+                                <i className="bi bi-person-plus me-2"></i>
+                                Add Employee
+                            </Button>
+                        )}
+                        <Button variant="outline-primary" onClick={() => setShowExportModal(true)} className="export-btn ms-2">
+                            <i className="bi bi-download me-2"></i>
+                            Export
                         </Button>
                     </Col>
                 </Row>
-                
-                <EmployeeStats
-                    employees={employees}
-                    filteredCount={filteredAndSortedEmployees.length}
-                />
 
+                <EmployeeStats employees={employees} filteredCount={totalCount} />
                 <EmployeeFilters
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
@@ -261,56 +201,40 @@ const EmployeeListPage = () => {
                     itemsPerPage={itemsPerPage}
                     setItemsPerPage={setItemsPerPage}
                     departments={departments}
+                    handleClearFilters={handleClearFilters}
                 />
-                
-                {loading ? (
-                    <div className="loading-container">
-                        <Spinner animation="border" role="status" />
-                        <p className="loading-text">Loading employees...</p>
-                    </div>
-                ) : error ? (
-                    <Alert variant="danger" className="error-alert">
-                        <i className="bi bi-exclamation-triangle me-2"></i>
-                        {error}
-                    </Alert>
-                ) : (
-                    <>
-                        <EmployeeTable
-                            loading={loading}
-                            error={error}
-                            paginatedEmployees={paginatedEmployees}
-                            selectedEmployees={selectedEmployees}
-                            handleSelectAll={handleSelectAll}
-                            handleSelectEmployee={handleSelectEmployee}
-                            handleSort={handleSort}
-                            sortField={sortField}
-                            sortDirection={sortDirection}
-                            handleEdit={handleEdit}
-                            handleDelete={handleDelete}
-                        />
 
-                        <EmployeePagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            filteredCount={filteredAndSortedEmployees.length}
-                            itemsPerPage={itemsPerPage}
-                            setCurrentPage={setCurrentPage}
-                        />
-                    </>
-                )}
+                <EmployeeTable
+                    employees={filteredAndSortedEmployees}
+                    loading={loading}
+                    error={error}
+                    handleDelete={handleDelete}
+                    handleEdit={handleEdit}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    handleSort={setSortField}
+                    userRole={userRole}
+                />
 
-                {/* Modals */}
+                <EmployeePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    filteredCount={totalCount}
+                    itemsPerPage={itemsPerPage}
+                    setCurrentPage={setCurrentPage}
+                />
+
                 <AddEmployeePage
                     show={showAddModal}
-                    handleClose={() => setShowAddModal(false)}
-                    onEmployeeAdded={fetchEmployees}
+                    handleClose={handleCloseAddModal}
+                    onEmployeeAdded={handleEmployeeAdded}
                 />
-
+                
                 {showEditModal && (
                     <EditEmployeePage
                         show={showEditModal}
-                        handleClose={() => setShowEditModal(false)}
-                        onEmployeeUpdated={fetchEmployees}
+                        handleClose={handleCloseEditModal}
+                        onEmployeeUpdated={handleEmployeeUpdated}
                         employeeToEdit={employeeToEdit}
                     />
                 )}
@@ -330,9 +254,9 @@ const EmployeeListPage = () => {
                             </Button>
                         </div>
                         <small className="text-muted mt-2 d-block">
-                            {selectedEmployees.length > 0
-                                ? `Exporting ${selectedEmployees.length} selected employees`
-                                : `Exporting all ${filteredAndSortedEmployees.length} filtered employees`
+                            {employees.length > 0
+                                ? `Exporting all ${employees.length} employees`
+                                : `No data to export`
                             }
                         </small>
                     </Modal.Body>

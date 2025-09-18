@@ -28,66 +28,57 @@ const EditEmployeePage = ({ show, handleClose, onEmployeeUpdated, employeeToEdit
             setPhone(employeeToEdit.phone);
             setJobTitle(employeeToEdit.jobTitle);
             setDepartment(employeeToEdit.department);
-        } else if (id) {
-            // Fetch employee data if the component is used on its own page
+        } else if (isStandalonePage) {
+            // Fetch employee data if a standalone page (direct URL access)
             const fetchEmployee = async () => {
-                const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                if (!userInfo || !userInfo.token) {
-                    navigate('/login');
-                    return;
-                }
                 setLoading(true);
                 try {
-                    const { data } = await axios.get(`${API_URL}/employees/${id}`, {
-                        headers: { Authorization: `Bearer ${userInfo.token}` }
-                    });
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+                    const token = userInfo?.token;
+                    const config = {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    };
+                    const { data } = await axios.get(`${API_URL}/employees/${id}`, config);
                     setName(data.name);
                     setEmail(data.email);
                     setPhone(data.phone);
                     setJobTitle(data.jobTitle);
                     setDepartment(data.department);
-                } catch (err) {
-                    setError(err.response?.data?.message || 'Failed to fetch employee details.');
-                } finally {
                     setLoading(false);
+                } catch (err) {
+                    setLoading(false);
+                    setError(err.response?.data?.message || 'Failed to fetch employee details.');
                 }
             };
             fetchEmployee();
         }
-    }, [employeeToEdit, id, navigate]);
+    }, [employeeToEdit, id, isStandalonePage]);
 
     const submitHandler = async (e) => {
         e.preventDefault();
         setError(null);
         setLoading(true);
 
-        // Basic validation
-        if (!name || !email || !jobTitle || !department) {
-            setError('Please fill in all required fields.');
-            setLoading(false);
-            return;
-        }
-
-        if (!isEmail(email)) {
-            setError('Please enter a valid email address.');
-            setLoading(false);
-            return;
-        }
-
-        if (phone && !isMobilePhone(phone, 'any', { strictMode: false })) {
-            setError('Please enter a valid phone number.');
-            setLoading(false);
-            return;
-        }
-        
+        const employeeId = employeeToEdit ? employeeToEdit._id : id;
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         const token = userInfo?.token;
 
         if (!token) {
             setError('You must be logged in to edit an employee.');
-            navigate('/login');
             setLoading(false);
-            return;
+            return navigate('/login');
+        }
+        
+        if (!isEmail(email)) {
+            setLoading(false);
+            return setError('Please enter a valid email address.');
+        }
+
+        if (phone && !isMobilePhone(phone, 'en-IN')) {
+             setLoading(false);
+             return setError('Please enter a valid Indian mobile number.');
         }
 
         try {
@@ -97,72 +88,71 @@ const EditEmployeePage = ({ show, handleClose, onEmployeeUpdated, employeeToEdit
                     Authorization: `Bearer ${token}`,
                 },
             };
-            const employeeId = employeeToEdit?._id || id;
+
             await axios.put(
                 `${API_URL}/employees/${employeeId}`,
                 { name, email, phone, jobTitle, department },
                 config
             );
-            
-            if (onEmployeeUpdated) onEmployeeUpdated();
-            if (!isStandalonePage) handleClose();
-            
+
+            if (onEmployeeUpdated) {
+                onEmployeeUpdated(); // Notify parent component to refresh
+            }
+            if (handleClose) {
+                handleClose(); // Close modal on success
+            }
+            if (isStandalonePage) {
+                navigate('/employees');
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update employee.');
-        } finally {
             setLoading(false);
+            setError(err.response?.data?.message || 'Failed to update employee. Please try again.');
         }
     };
 
     const modalBody = (
-        <>
+        <Form onSubmit={submitHandler}>
             {error && <Alert variant="danger">{error}</Alert>}
-           <Form onSubmit={submitHandler}>
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="editFormName">
-        <Form.Label>Name</Form.Label>
-        <Form.Control type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-      </Form.Group>
-    </Col>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="editFormEmail">
-        <Form.Label>Email</Form.Label>
-        <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="editFormPhone">
-        <Form.Label>Phone</Form.Label>
-        <Form.Control type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      </Form.Group>
-    </Col>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="editFormJobTitle">
-        <Form.Label>Job Title</Form.Label>
-        <Form.Control type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="editFormDepartment">
-        <Form.Label>Department</Form.Label>
-        <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-    {loading ? 'Updating...' : 'Update Employee'}
-  </Button>
-</Form>
-
-        </>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Name</Form.Label>
+                        <Form.Control type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Email</Form.Label>
+                        <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Phone</Form.Label>
+                        <Form.Control type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Job Title</Form.Label>
+                        <Form.Control type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Department</Form.Label>
+                        <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} required />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+                {loading ? 'Updating...' : 'Update Employee'}
+            </Button>
+        </Form>
     );
 
     return isStandalonePage ? (

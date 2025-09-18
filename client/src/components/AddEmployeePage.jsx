@@ -1,4 +1,3 @@
-// client/src/components/AddEmployeePage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Form, Button, Alert, Row, Col} from 'react-bootstrap';
@@ -37,32 +36,19 @@ const AddEmployeePage = ({ show, handleClose, onEmployeeAdded }) => {
 
         if (!token) {
             setError('You must be logged in to add an employee.');
-            navigate('/login');
             setLoading(false);
-            return;
+            return navigate('/login');
         }
 
-        // --- NEW VALIDATION: Check if any required fields are missing
-        if (!name || !email || !jobTitle || !department) {
-            setError('Please enter all required fields: Name, Email, Job Title, and Department.');
-            setLoading(false);
-            return;
-        }
-
-        // Validate email format
         if (!isEmail(email)) {
-            setError('Please enter a valid email address.');
             setLoading(false);
-            return;
+            return setError('Please enter a valid email address.');
         }
 
-        // Validate optional phone format if provided
-        if (phone && !isMobilePhone(phone, 'any', { strictMode: false })) {
-            setError('Please enter a valid phone number.');
-            setLoading(false);
-            return;
+        if (phone && !isMobilePhone(phone, 'en-IN')) {
+             setLoading(false);
+             return setError('Please enter a valid Indian mobile number.');
         }
-        // --- END OF NEW VALIDATION ---
 
         try {
             const config = {
@@ -78,79 +64,64 @@ const AddEmployeePage = ({ show, handleClose, onEmployeeAdded }) => {
                 config
             );
 
-            onEmployeeAdded();
-            handleClose();
-            resetForm();
+            onEmployeeAdded(); // Notify parent component to refresh
+            handleClose(); // Close modal on success
+            resetForm(); // Reset form for next use
+
         } catch (err) {
-            if (err.response) {
-                if (err.response.status === 400) {
-                    setError(err.response.data.message);
-                } else if (err.response.status === 401 || err.response.status === 403) {
-                    setError('You are not authorized to perform this action. Please log in as an administrator.');
-                    navigate('/login');
-                } else {
-                    setError('An unexpected error occurred. Please try again later.');
-                }
-            } else {
-                setError('Failed to connect to the server. Please check your network connection.');
-            }
-        } finally {
             setLoading(false);
+            setError(err.response?.data?.message || 'Failed to add employee. Please try again.');
         }
     };
 
     return (
-        <Modal show={show} onHide={handleClose} centered className="add-employee-modal">
+        <Modal show={show} onHide={handleClose} centered>
             <Modal.Header closeButton>
                 <Modal.Title>Add New Employee</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {error && <Alert variant="danger">{error}</Alert>}
                 <Form onSubmit={submitHandler}>
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="formName">
-        <Form.Label>Name</Form.Label>
-        <Form.Control type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-      </Form.Group>
-    </Col>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="formEmail">
-        <Form.Label>Email</Form.Label>
-        <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="formPhone">
-        <Form.Label>Phone</Form.Label>
-        <Form.Control type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      </Form.Group>
-    </Col>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="formJobTitle">
-        <Form.Label>Job Title</Form.Label>
-        <Form.Control type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Row>
-    <Col md={6}>
-      <Form.Group className="mb-3" controlId="formDepartment">
-        <Form.Label>Department</Form.Label>
-        <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} required />
-      </Form.Group>
-    </Col>
-  </Row>
-
-  <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-    {loading ? 'Adding...' : 'Add Employee'}
-  </Button>
-</Form>
-
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3" controlId="formName">
+                                <Form.Label>Name</Form.Label>
+                                <Form.Control type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3" controlId="formEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3" controlId="formPhone">
+                                <Form.Label>Phone</Form.Label>
+                                <Form.Control type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3" controlId="formJobTitle">
+                                <Form.Label>Job Title</Form.Label>
+                                <Form.Control type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3" controlId="formDepartment">
+                                <Form.Label>Department</Form.Label>
+                                <Form.Control type="text" value={department} onChange={(e) => setDepartment(e.target.value)} required />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+                    <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+                        {loading ? 'Adding...' : 'Add Employee'}
+                    </Button>
+                </Form>
             </Modal.Body>
         </Modal>
     );
