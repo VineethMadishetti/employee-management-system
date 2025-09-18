@@ -62,7 +62,7 @@ const EmployeeListPage = () => {
                 return;
             }
 
-            console.log('Fetching employees with token:', token.substring(0, 10) + '...');
+            console.log('Fetching employees with token:', token.substring(0, 10) + '...'); // Debug log
             const config = {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -79,7 +79,7 @@ const EmployeeListPage = () => {
             };
             
             const { data } = await axios.get(`${API_URL}/employees`, config);
-            console.log('API response:', data);
+            console.log('API response:', data); // Debug log
             setEmployees(data.employees || []);
             setDepartments(data.departments || []);
             setTotalPages(data.totalPages || 1);
@@ -94,14 +94,14 @@ const EmployeeListPage = () => {
             setEmployees([]);
             console.error('Fetch error:', err.response || err);
             if (err.response?.status === 401) {
-                localStorage.removeItem('userInfo');
+                localStorage.removeItem('userInfo'); // Clear invalid token
                 navigate('/login');
             }
         }
     };
 
     useEffect(() => {
-        if (userRole) fetchEmployees();
+        if (userRole) fetchEmployees(); // Only fetch if userRole is set
     }, [currentPage, itemsPerPage, searchTerm, filterDepartment, filterStatus, sortField, sortDirection, userRole]);
 
     const handleSort = (field) => {
@@ -164,7 +164,7 @@ const EmployeeListPage = () => {
     };
 
     const handleExport = (format) => {
-        const employeesToExport = employees.map(({ _id, status, user, __v, ...rest }) => rest); // Exclude _id, status, user, __v
+        const employeesToExport = employees;
 
         if (employeesToExport.length === 0) {
             alert('No data to export.');
@@ -173,7 +173,7 @@ const EmployeeListPage = () => {
 
         if (format === 'csv') {
             const header = Object.keys(employeesToExport[0]).join(',');
-            const body = employeesToExport.map(row => Object.values(row).map(val => `"${val}"`).join(',')).join('\n'); // Wrap values in quotes
+            const body = employeesToExport.map(row => Object.values(row).join(',')).join('\n');
             const csv = header + '\n' + body;
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
