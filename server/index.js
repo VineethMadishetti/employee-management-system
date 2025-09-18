@@ -36,3 +36,9 @@ connectDB().then(() => {
     console.error('Failed to connect to the database. Server will not start.', error);
     process.exit(1); // Exit the process with an error code
 });
+
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://vineethmern1.netlify.app',
+  credentials: true,
+}));
