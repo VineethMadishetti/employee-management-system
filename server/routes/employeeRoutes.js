@@ -54,17 +54,21 @@ router.get('/', protect, async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit));
             
-        const totalCount = await Employee.countDocuments(query);
+        const totalEmployees = await Employee.countDocuments(query);  // Renamed for consistency
         const departments = await Employee.distinct('department');
 
+        // Debug log (remove in production)
+        console.log(`Fetched ${employees.length} employees for query:`, { page, limit, search, department, status });
+
         res.json({
-            employees,
-            totalPages: Math.ceil(totalCount / parseInt(limit)),
+            employees: employees || [],  // Always array
+            totalPages: Math.ceil(totalEmployees / parseInt(limit)),
             currentPage: parseInt(page),
-            totalEmployees: totalCount,
-            departments,
+            totalEmployees,  // Consistent key
+            departments: departments || [],
         });
     } catch (error) {
+        console.error('Error fetching employees:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
@@ -154,7 +158,7 @@ router.delete('/:id', protect, admin, async (req, res) => {
     }
 });
 
-// @desc    Bulk delete employees
+// @desc    Bulk delete employees (kept for future, but not used in frontend)
 // @route   DELETE /api/employees/bulk
 // @access  Private/Admin
 router.delete('/bulk', protect, admin, async (req, res) => {
@@ -178,7 +182,7 @@ router.delete('/bulk', protect, admin, async (req, res) => {
     }
 });
 
-// @desc    Bulk update employee status
+// @desc    Bulk update employee status (kept for future, but not used in frontend)
 // @route   PUT /api/employees/bulk/status
 // @access  Private/Admin
 router.put('/bulk/status', protect, admin, async (req, res) => {
@@ -206,6 +210,5 @@ router.put('/bulk/status', protect, admin, async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-
 
 module.exports = router;

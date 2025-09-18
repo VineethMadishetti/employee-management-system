@@ -14,7 +14,14 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+
+// CORS: Specific origin for Netlify; allow all in dev
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://vineethmern1.netlify.app' 
+    : true,
+  credentials: true,
+}));
 
 // Define API routes
 app.use('/api/users', userRoutes);
@@ -36,9 +43,3 @@ connectDB().then(() => {
     console.error('Failed to connect to the database. Server will not start.', error);
     process.exit(1); // Exit the process with an error code
 });
-
-const cors = require('cors');
-app.use(cors({
-  origin: 'https://vineethmern1.netlify.app',
-  credentials: true,
-}));

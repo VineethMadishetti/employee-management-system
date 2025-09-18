@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Container, Button, Alert, Modal, Row, Col, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Button, Alert, Modal, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import EmployeeStats from './EmployeeStats';
@@ -14,7 +14,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const EmployeeListPage = () => {
     const navigate = useNavigate();
-    const [employees, setEmployees] = useState([]);
+    const [employees, setEmployees] = useState([]);  // Always array
+    const [departments, setDepartments] = useState([]);  // From backend
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -33,11 +34,6 @@ const EmployeeListPage = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-
-    const departments = useMemo(() => {
-        const allDepartments = employees.map(emp => emp.department);
-        return [...new Set(allDepartments)].sort();
-    }, [employees]);
 
     // Fetch user role from local storage on component mount
     useEffect(() => {
@@ -77,14 +73,16 @@ const EmployeeListPage = () => {
             };
             
             const { data } = await axios.get(`${API_URL}/employees`, config);
-            setEmployees(data.employees);
-            setTotalPages(data.totalPages);
-            setTotalCount(data.totalCount);
+            setEmployees(data.employees || []);
+            setDepartments(data.departments || []);  // Set from backend
+            setTotalPages(data.totalPages || 1);
+            setTotalCount(data.totalEmployees || 0);  // FIXED: Match backend key
             setLoading(false);
         } catch (err) {
             setLoading(false);
             const errorMessage = err.response?.data?.message || 'Failed to fetch employees. Please try again.';
             setError(errorMessage);
+            setEmployees([]);
             console.error(err);
         }
     };
@@ -92,6 +90,17 @@ const EmployeeListPage = () => {
     useEffect(() => {
         fetchEmployees();
     }, [currentPage, itemsPerPage, searchTerm, filterDepartment, filterStatus, sortField, sortDirection]);
+
+    // Sort handler (toggles direction)
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+        setCurrentPage(1);  // Reset page
+    };
 
     const handleAddClick = () => setShowAddModal(true);
     const handleCloseAddModal = () => setShowAddModal(false);
@@ -136,13 +145,13 @@ const EmployeeListPage = () => {
         }
     };
 
-    // Pagination
-    const filteredAndSortedEmployees = useMemo(() => {
-        return employees.slice();
-    }, [employees]);
-
     const handleExport = (format) => {
-        const employeesToExport = filteredAndSortedEmployees;
+        const employeesToExport = employees;
+
+        if (employeesToExport.length === 0) {
+            alert('No data to export.');
+            return;
+        }
 
         if (format === 'csv') {
             const header = Object.keys(employeesToExport[0]).join(',');
@@ -157,7 +166,21 @@ const EmployeeListPage = () => {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } else if (format === 'json') {
+            const json = JSON.stringify(employeesToExport, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'employees.json');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
+        setShowExportModal(false);
     };
 
     const handleClearFilters = () => {
@@ -190,6 +213,13 @@ const EmployeeListPage = () => {
                     </Col>
                 </Row>
 
+                {error && (
+                    <Alert variant="danger" className="mb-3">
+                        <i className="bi bi-exclamation-triangle me-2"></i>
+                        {error}
+                    </Alert>
+                )}
+
                 <EmployeeStats employees={employees} filteredCount={totalCount} />
                 <EmployeeFilters
                     searchTerm={searchTerm}
@@ -200,19 +230,19 @@ const EmployeeListPage = () => {
                     setFilterStatus={setFilterStatus}
                     itemsPerPage={itemsPerPage}
                     setItemsPerPage={setItemsPerPage}
-                    departments={departments}
+                    departments={departments}  // From backend
                     handleClearFilters={handleClearFilters}
                 />
 
                 <EmployeeTable
-                    employees={filteredAndSortedEmployees}
+                    employees={employees}  // FIXED: Direct pass
                     loading={loading}
                     error={error}
-                    handleDelete={handleDelete}
-                    handleEdit={handleEdit}
+                    handleSort={handleSort}
                     sortField={sortField}
                     sortDirection={sortDirection}
-                    handleSort={setSortField}
+                    handleDelete={handleDelete}
+                    handleEdit={handleEdit}
                     userRole={userRole}
                 />
 
@@ -246,7 +276,7 @@ const EmployeeListPage = () => {
                     <Modal.Body>
                         <p>Choose the export format for your employee data:</p>
                         <div className="d-grid gap-2">
-                            <Button variant="outline-success text" onClick={() => handleExport('csv')}>
+                            <Button variant="outline-success" onClick={() => handleExport('csv')}>
                                 <i className="bi bi-file-earmark-spreadsheet"></i> Export as CSV
                             </Button>
                             <Button variant="outline-primary" onClick={() => handleExport('json')}>
@@ -255,7 +285,7 @@ const EmployeeListPage = () => {
                         </div>
                         <small className="text-muted mt-2 d-block">
                             {employees.length > 0
-                                ? `Exporting all ${employees.length} employees`
+                                ? `Exporting ${employees.length} employees`
                                 : `No data to export`
                             }
                         </small>

@@ -1,19 +1,16 @@
 import React from 'react';
-import { Table, Card, Spinner, Alert, Form, Button, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Table, Spinner, Alert, Button } from 'react-bootstrap';
 
 const EmployeeTable = ({
+    employees = [],  // FIXED: Default to prevent undefined
     loading,
     error,
-    paginatedEmployees,
-    selectedEmployees,
-    handleSelectAll,
-    handleSelectEmployee,
     handleSort,
     sortField,
     sortDirection,
     handleEdit,
-    handleDelete
+    handleDelete,
+    userRole
 }) => {
     const getDisplayName = (name) => name || '';
 
@@ -47,33 +44,19 @@ const EmployeeTable = ({
             <Table hover responsive className="employee-table">
                 <thead>
                     <tr>
-                        <th>
-                            <Form.Check
-                                type="checkbox"
-                                checked={selectedEmployees.length === paginatedEmployees.length && paginatedEmployees.length > 0}
-                                onChange={handleSelectAll}
-                            />
-                        </th>
                         <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
                             Name {renderSortArrow('name')}
                         </th>
-                        <th>Email </th>
+                        <th>Email</th>
                         <th>Job Title</th>
                         <th>Department</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {paginatedEmployees.length > 0 ? (
-                        paginatedEmployees.map(employee => (
+                    {employees.length > 0 ? (
+                        employees.map(employee => (
                             <tr key={employee._id}>
-                                <td>
-                                    <Form.Check
-                                        type="checkbox"
-                                        checked={selectedEmployees.includes(employee._id)}
-                                        onChange={(e) => handleSelectEmployee(e, employee._id)}
-                                    />
-                                </td>
                                 <td>{getDisplayName(employee.name)}</td>
                                 <td>{employee.email}</td>
                                 <td>{employee.jobTitle}</td>
@@ -88,20 +71,22 @@ const EmployeeTable = ({
                                     >
                                         <i className="bi bi-pencil"></i>
                                     </Button>
-                                    <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        onClick={() => handleDelete(employee._id)}
-                                        title="Delete Employee"
-                                    >
-                                        <i className="bi bi-trash"></i>
-                                    </Button>
+                                    {userRole === 'admin' && (
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => handleDelete(employee._id)}
+                                            title="Delete Employee"
+                                        >
+                                            <i className="bi bi-trash"></i>
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="7" className="text-center py-4">
+                            <td colSpan="5" className="text-center py-4">  // FIXED: 5 columns
                                 <div>
                                     <i className="bi bi-inbox display-4 text-muted"></i>
                                     <p className="mt-2 text-muted">No employees found.</p>
