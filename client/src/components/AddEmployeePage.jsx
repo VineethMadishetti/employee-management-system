@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { Modal, Button, Form, Alert, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,55 +74,74 @@ const AddEmployeePage = ({ show, handleClose, onEmployeeAdded }) => {
                     </Alert>
                 )}
                 <Form onSubmit={handleSubmit}>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Name</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Phone</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Job Title</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="jobTitle"
-                            value={formData.jobTitle}
-                            onChange={handleChange}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Department</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="department"
-                            value={formData.department}
-                            onChange={handleChange}
-                            required
-                        />
-                    </Form.Group>
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Name</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Phone</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Job Title</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="jobTitle"
+                                    value={formData.jobTitle}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    <Row>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Department</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
                     <Button variant="primary" type="submit" disabled={loading}>
                         {loading ? 'Adding...' : 'Add Employee'}
                     </Button>
