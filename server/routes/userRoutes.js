@@ -1,4 +1,3 @@
-// server/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
@@ -110,7 +109,8 @@ router.post('/forgot-password', async (req, res) => {
         const resetToken = user.getResetPasswordToken();
         await user.save();
 
-        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`; // Or your client's port, e.g., 3000
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+        console.log(`Generated reset URL: ${resetUrl}`); // Debug
 
         const message = `
             <h1>You have requested a password reset</h1>
@@ -128,13 +128,14 @@ router.post('/forgot-password', async (req, res) => {
 
             res.status(200).json({ message: 'Password reset link sent to your email.' });
         } catch (error) {
-            console.error(error);
+            console.error('Error sending email:', error);
             user.passwordResetToken = undefined;
             user.passwordResetExpires = undefined;
             await user.save();
             res.status(500).json({ message: 'Email could not be sent. Please try again later.' });
         }
     } catch (error) {
+        console.error('Error in forgot-password:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
